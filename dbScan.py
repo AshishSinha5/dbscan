@@ -20,7 +20,7 @@ MinPts = 4
 def dist(x1,x2,y1,y2): #returns euclidian distance
     return ((x1-x2)**2 + (y1-y2)**2)**0.5
 
-# Heuristic calculation of parameter Eps as discussed in section 4.2 of the paper 
+# Heuristic calculation of parameter Eps as discussed in section 4.2 of the original paper
 
 def kdist(sample,MinPts): #returns kth nearest neighbour of the point
     sample['k-long'] = np.nan
