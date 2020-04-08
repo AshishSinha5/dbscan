@@ -7,11 +7,13 @@ Created on Mon Apr  6 09:43:11 2020
 
 import pandas as pd
 import numpy as np
-import plotly.graph_objects as go
+#import plotly.graph_objects as go
+import json
+import math
 
 point = pd.read_csv("G:/dbscan/ca.csv",delimiter=":", header = None, names = ["long", "lat", "place"])
 
-sample = point[:20000]
+sample = point.sample(frac = 0.3, random_state = 1)
 
 #determining Eps and MinPts
 
@@ -36,17 +38,20 @@ def kdist(sample,MinPts): #returns kth nearest neighbour of the point
 
 #sample["k-dist"] = dist(sample['long'], sample['k-long'], sample['lat'], sample['k-lat'])
 
-y = sample.sort_values(by = 'k-dist', ascending = False)['k-dist']
+#kdist(sample, MinPts)
 
-fig = go.Figure(
-        data = [go.Scatter(y=y, text = list(y.index))]
-        )
+#y = sample.sort_values(by = 'k-dist', ascending = False)['k-dist']
 
-fig.show(renderer = "browser")
+#fig = go.Figure(
+#        data = [go.Scatter(y=y, text = list(y.index))]
+#        )
 
-fig.write_image("G:/dbscan/k-dist.png")
+#fig.show(renderer = "browser")
+
+#fig.write_image("G:/dbscan/k-dist.png")
 #by inspection
-Eps = sample['k-dist'].iloc[5746]
+#Eps = sample['k-dist'].iloc[5746]
+Eps = 3173.0516856805216 #found on previous run of k-dist
 sample['clId'] = np.nan
 
 # Naive implementation of algorithms as discussed in Section 4.1 of the paper
@@ -66,7 +71,7 @@ def regionQuery(sample, pt, Eps): # gives the epsilon neighborhood of point pt
 def dbscan(sample, Eps, MinPts): # main function for dbscan
     ClusterId = -1 # cluster Id for noise is -1
     for i in range(len(sample)):
-        if sample['clId'].iloc[i] == np.nan:
+        if math.isnan(sample['clId'].iloc[i]):
             if expandCluster(sample, i, ClusterId, Eps, MinPts):
                 ClusterId+=1
     
@@ -76,7 +81,7 @@ def dbscan(sample, Eps, MinPts): # main function for dbscan
 def expandCluster(sample, i, ClId, Eps, MinPts): #function for expanding the clusters
     seeds = regionQuery(sample, i, Eps)
     if len(seeds) < MinPts:
-        sample['clid'].iloc[i] = -1  #noise  = -1
+        sample['clId'].iloc[i] = -1  #noise  = -1
         return False
     else:
         sample['clId'].iloc[seeds] = ClId
@@ -86,16 +91,25 @@ def expandCluster(sample, i, ClId, Eps, MinPts): #function for expanding the clu
             result = regionQuery(sample, currentP, Eps)
             if len(result) >= MinPts:
                 for i in range(len(result)):
-                    if sample['clId'].iloc[i] in [np.nan, -1]:
-                        if sample['clId'].iloc[i] == np.nan:
+                    if math.isnan(sample['clId'].iloc[i]) or sample['clId'].iloc[i] == -1:
+                        if math.isnan(sample['clId'].iloc[i]):
                             seeds.append(i)
                         sample['clId'].iloc[i] = ClId
             seeds.remove(currentP)
         return True
+
+
+dbscan(sample, Eps, MinPts)
+
     
 # save the output file
+output = {}
+output['MinPts'] = MinPts
+output['Eps'] = Eps
+output['data'] = sample
 
-sample.to_csv("G:/dbscan/output.csv")
+with open('data.txt', 'w') as outfile:
+    json.dump(output, outfile)
     
     
         
