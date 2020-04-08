@@ -7,13 +7,13 @@ Created on Mon Apr  6 09:43:11 2020
 
 import pandas as pd
 import numpy as np
-#import plotly.graph_objects as go
+import plotly.graph_objects as go
 import json
 import math
 
 point = pd.read_csv("G:/dbscan/ca.csv",delimiter=":", header = None, names = ["long", "lat", "place"])
 
-sample = point.sample(frac = 0.3, random_state = 1)
+sample = point.sample(frac = 0.03, random_state = 1)
 
 #determining Eps and MinPts
 
@@ -30,28 +30,29 @@ def kdist(sample,MinPts): #returns kth nearest neighbour of the point
     sample['k-dist'] = np.nan
     for i in range(len(sample)):
         df = sample[['long','lat']]
-        df['dist'] = dist(df['long'].iloc[0], df['long'], df['lat'].iloc[0], df['lat'])
+        df['dist'] = dist(df['long'].iloc[i], df['long'], df['lat'].iloc[i], df['lat'])
         sample['k-long'].iloc[i] = df.sort_values(by = 'dist').iloc[5]['long']
         sample['k-lat'].iloc[i] = df.sort_values(by = 'dist').iloc[5]['lat']
         sample['k-dist'].iloc[i] = df.sort_values(by = 'dist').iloc[5]['dist']
+        print(i)
     return
 
 #sample["k-dist"] = dist(sample['long'], sample['k-long'], sample['lat'], sample['k-lat'])
 
-#kdist(sample, MinPts)
+kdist(sample, MinPts)
 
-#y = sample.sort_values(by = 'k-dist', ascending = False)['k-dist']
+y = sample.sort_values(by = 'k-dist', ascending = False)['k-dist']
 
-#fig = go.Figure(
-#        data = [go.Scatter(y=y, text = list(y.index))]
-#        )
+fig = go.Figure(
+        data = [go.Scatter(y=y, text = list(y.index))]
+        )
 
-#fig.show(renderer = "browser")
+fig.show(renderer = "browser")
 
-#fig.write_image("G:/dbscan/k-dist.png")
+fig.write_image("G:/dbscan/k-dist.png")
 #by inspection
-#Eps = sample['k-dist'].iloc[5746]
-Eps = 3173.0516856805216 #found on previous run of k-dist
+Eps = sample['k-dist'].loc[55541]
+#Eps = 3173.0516856805216 #found on previous run of k-dist
 sample['clId'] = np.nan
 
 # Naive implementation of algorithms as discussed in Section 4.1 of the paper
@@ -74,6 +75,7 @@ def dbscan(sample, Eps, MinPts): # main function for dbscan
         if math.isnan(sample['clId'].iloc[i]):
             if expandCluster(sample, i, ClusterId, Eps, MinPts):
                 ClusterId+=1
+        print(i)
     
                 
                 
@@ -111,8 +113,22 @@ output['data'] = sample
 with open('data.txt', 'w') as outfile:
     json.dump(output, outfile)
     
-    
-        
-        
-    
+x = sample['long']
+y = sample['lat']
+clid = sample['clId']
+
+traces = []
+for i in list(set(sample['clId'])):
+    x = sample[sample['clId'] == i]['long']
+    y = sample[sample['clId'] == i]['lat']
+    if (i == -1):
+        traces.append(go.Scatter(x = x, y = y, name = i, mode = 'markers'))
+    else:
+        traces.append(go.Scatter(x = x, y = y, name = i))
+
+figure = go.Figure(data = traces)
+
+figure.show(renderer = "browser")
+      
+figure.write_image("G:/dbscan/cluster.png")
 
